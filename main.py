@@ -52,3 +52,23 @@ async def analyze_resume(
         "message": "Resume analyzed and saved successfully",
         "analysis": analysis_json
     }
+
+@app.get("/analyses")
+def get_analyses():
+    db = SessionLocal()
+    analyses = db.query(ResumeAnalysis).all()
+    db.close()
+
+    results = []
+
+    for analysis in analyses:
+        results.append({
+            "id": analysis.id,
+            "filename": analysis.filename,
+            "summary": analysis.summary,
+            "matching_skills": json.loads(analysis.matching_skills),
+            "missing_skills": json.loads(analysis.missing_skills),
+            "suggestions": json.loads(analysis.suggestions)
+        })
+
+    return {"analyses": results}
