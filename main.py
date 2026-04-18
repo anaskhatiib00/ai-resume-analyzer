@@ -1,7 +1,10 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 import fitz
+import json
 
 from services.resume_analyzer import analyze_resume_against_job
+from database import SessionLocal
+from models import ResumeAnalysis
 
 app = FastAPI()
 
@@ -10,7 +13,7 @@ def home():
     return {"message": "AI Resume Analyzer is running"}
 
 @app.post("/analyze-resume")
-async def upload_resume(
+async def analyze_resume(
     file: UploadFile = File(...),
     job_description: str = Form(...)
 ):
@@ -31,8 +34,21 @@ async def upload_resume(
     except Exception:
         raise HTTPException(status_code=500, detail="AI analysis failed")
 
+    db = SessionLocal()
+
+    new_record = ResumeAnalysis(
+        filename=file.filename,
+        summary=analysis_json.get("summary"),
+        matching_skills=json.dumps(analysis_json.get("matching_skills")),
+        missing_skills=json.dumps(analysis_json.get("missing_skills")),
+        suggestions=json.dumps(analysis_json.get("suggestions"))
+    )
+
+    db.add(new_record)
+    db.commit()
+    db.close()
+
     return {
-        "message": "Resume uploaded and analyzed successfully",
-        "filename": file.filename,
+        "message": "Resume analyzed and saved successfully",
         "analysis": analysis_json
     }
