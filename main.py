@@ -90,3 +90,18 @@ def get_analysis_by_id(analysis_id: int):
         "missing_skills": json.loads(analysis.missing_skills),
         "suggestions": json.loads(analysis.suggestions)
     }
+
+@app.delete("/analyses/{analysis_id}")
+def delete_analysis(analysis_id: int):
+    db = SessionLocal()
+    analysis = db.query(ResumeAnalysis).filter(ResumeAnalysis.id == analysis_id).first()
+
+    if not analysis:
+        db.close()
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    db.delete(analysis)
+    db.commit()
+    db.close()
+
+    return {"message": "Analysis deleted successfully"}
