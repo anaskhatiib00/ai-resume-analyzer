@@ -1,10 +1,13 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 import fitz
-import json
 
 from services.resume_analyzer import analyze_resume_against_job
-from database import SessionLocal
-from models import ResumeAnalysis
+from services.analysis_service import (
+    save_analysis,
+    get_all_analyses,
+    get_analysis_by_id,
+    delete_analysis_by_id
+)
 
 app = FastAPI()
 
@@ -34,19 +37,7 @@ async def analyze_resume(
     except Exception:
         raise HTTPException(status_code=500, detail="AI analysis failed")
 
-    db = SessionLocal()
-
-    new_record = ResumeAnalysis(
-        filename=file.filename,
-        summary=analysis_json.get("summary"),
-        matching_skills=json.dumps(analysis_json.get("matching_skills")),
-        missing_skills=json.dumps(analysis_json.get("missing_skills")),
-        suggestions=json.dumps(analysis_json.get("suggestions"))
-    )
-
-    db.add(new_record)
-    db.commit()
-    db.close()
+    save_analysis(file.filename, analysis_json)
 
     return {
         "message": "Resume analyzed and saved successfully",
@@ -55,53 +46,22 @@ async def analyze_resume(
 
 @app.get("/analyses")
 def get_analyses():
-    db = SessionLocal()
-    analyses = db.query(ResumeAnalysis).all()
-    db.close()
-
-    results = []
-
-    for analysis in analyses:
-        results.append({
-            "id": analysis.id,
-            "filename": analysis.filename,
-            "summary": analysis.summary,
-            "matching_skills": json.loads(analysis.matching_skills),
-            "missing_skills": json.loads(analysis.missing_skills),
-            "suggestions": json.loads(analysis.suggestions)
-        })
-
-    return {"analyses": results}
+    return {"analyses": get_all_analyses()}
 
 @app.get("/analyses/{analysis_id}")
-def get_analysis_by_id(analysis_id: int):
-    db = SessionLocal()
-    analysis = db.query(ResumeAnalysis).filter(ResumeAnalysis.id == analysis_id).first()
-    db.close()
+def get_single_analysis(analysis_id: int):
+    analysis = get_analysis_by_id(analysis_id)
 
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
 
-    return {
-        "id": analysis.id,
-        "filename": analysis.filename,
-        "summary": analysis.summary,
-        "matching_skills": json.loads(analysis.matching_skills),
-        "missing_skills": json.loads(analysis.missing_skills),
-        "suggestions": json.loads(analysis.suggestions)
-    }
+    return analysis
 
 @app.delete("/analyses/{analysis_id}")
 def delete_analysis(analysis_id: int):
-    db = SessionLocal()
-    analysis = db.query(ResumeAnalysis).filter(ResumeAnalysis.id == analysis_id).first()
+    deleted = delete_analysis_by_id(analysis_id)
 
-    if not analysis:
-        db.close()
+    if not deleted:
         raise HTTPException(status_code=404, detail="Analysis not found")
-
-    db.delete(analysis)
-    db.commit()
-    db.close()
 
     return {"message": "Analysis deleted successfully"}
