@@ -3,6 +3,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import fitz
 import os
+import json
 
 load_dotenv()
 
@@ -28,25 +29,36 @@ async def upload_resume(file: UploadFile = File(...)):
     pdf_document.close()
 
     prompt = f"""
-    You are a professional resume reviewer.
+You are a professional resume reviewer.
 
-    Analyze this resume and return:
-    1. A short summary
-    2. Main strengths
-    3. Main weaknesses
-    4. Suggestions for improvement
+Analyze the resume below and return valid JSON only.
 
-    Resume text:
-    {extracted_text}
-    """
+Use this exact structure:
+{{
+  "summary": "short professional summary",
+  "strengths": ["strength 1", "strength 2", "strength 3"],
+  "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
+  "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"]
+}}
+
+Resume text:
+{extracted_text}
+"""
 
     response = client.responses.create(
         model="gpt-4.1-mini",
         input=prompt
     )
 
+    ai_text = response.output_text.strip()
+
+    try:
+        analysis_json = json.loads(ai_text)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="AI did not return valid JSON")
+
     return {
         "message": "Resume uploaded and analyzed successfully",
         "filename": file.filename,
-        "analysis": response.output_text
+        "analysis": analysis_json
     }
