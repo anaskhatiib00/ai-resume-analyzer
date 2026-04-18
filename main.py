@@ -72,3 +72,21 @@ def get_analyses():
         })
 
     return {"analyses": results}
+
+@app.get("/analyses/{analysis_id}")
+def get_analysis_by_id(analysis_id: int):
+    db = SessionLocal()
+    analysis = db.query(ResumeAnalysis).filter(ResumeAnalysis.id == analysis_id).first()
+    db.close()
+
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    return {
+        "id": analysis.id,
+        "filename": analysis.filename,
+        "summary": analysis.summary,
+        "matching_skills": json.loads(analysis.matching_skills),
+        "missing_skills": json.loads(analysis.missing_skills),
+        "suggestions": json.loads(analysis.suggestions)
+    }
