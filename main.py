@@ -1,14 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from openai import OpenAI
-from dotenv import load_dotenv
 import fitz
-import os
-import json
 
-load_dotenv()
+from services.resume_analyzer import analyze_resume_text
 
 app = FastAPI()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.get("/")
 def home():
@@ -28,34 +23,10 @@ async def upload_resume(file: UploadFile = File(...)):
 
     pdf_document.close()
 
-    prompt = f"""
-You are a professional resume reviewer.
-
-Analyze the resume below and return valid JSON only.
-
-Use this exact structure:
-{{
-  "summary": "short professional summary",
-  "strengths": ["strength 1", "strength 2", "strength 3"],
-  "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
-  "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"]
-}}
-
-Resume text:
-{extracted_text}
-"""
-
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=prompt
-    )
-
-    ai_text = response.output_text.strip()
-
     try:
-        analysis_json = json.loads(ai_text)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="AI did not return valid JSON")
+        analysis_json = analyze_resume_text(extracted_text)
+    except Exception:
+        raise HTTPException(status_code=500, detail="AI analysis failed")
 
     return {
         "message": "Resume uploaded and analyzed successfully",
