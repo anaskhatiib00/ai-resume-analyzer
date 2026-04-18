@@ -9,7 +9,7 @@ app = FastAPI()
 def home():
     return {"message": "AI Resume Analyzer is running"}
 
-@app.post("/upload-resume")
+@app.post("/analyze-resume")
 async def upload_resume(
     file: UploadFile = File(...),
     job_description: str = Form(...)
