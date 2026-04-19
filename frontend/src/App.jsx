@@ -1,12 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 
 function App() {
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState("");
   const [analysis, setAnalysis] = useState(null);
+  const [savedAnalyses, setSavedAnalyses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const fetchAnalyses = async () => {
+    try {
+      setHistoryLoading(true);
+      const response = await fetch("http://127.0.0.1:8000/analyses");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to fetch analyses.");
+      }
+
+      setSavedAnalyses(data.analyses);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalyses();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,6 +66,7 @@ function App() {
       }
 
       setAnalysis(data.analysis);
+      fetchAnalyses();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -80,7 +105,7 @@ function App() {
 
         {analysis && (
           <div className="result">
-            <h2>Analysis Result</h2>
+            <h2>Latest Analysis</h2>
 
             <div className="card">
               <h3>Summary</h3>
@@ -115,6 +140,24 @@ function App() {
             </div>
           </div>
         )}
+
+        <div className="history">
+          <h2>Saved Analyses</h2>
+
+          {historyLoading ? (
+            <p>Loading saved analyses...</p>
+          ) : savedAnalyses.length === 0 ? (
+            <p>No saved analyses yet.</p>
+          ) : (
+            savedAnalyses.map((item) => (
+              <div className="card" key={item.id}>
+                <h3>{item.filename}</h3>
+                <p><strong>ID:</strong> {item.id}</p>
+                <p>{item.summary}</p>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
