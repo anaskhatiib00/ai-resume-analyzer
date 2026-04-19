@@ -74,6 +74,26 @@ function App() {
     }
   };
 
+  const handleDelete = async (analysisId) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/analyses/${analysisId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to delete analysis.");
+      }
+
+      if (savedAnalyses.length > 0) {
+        setSavedAnalyses(savedAnalyses.filter((item) => item.id !== analysisId));
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <div className="app">
       <div className="container">
@@ -154,6 +174,7 @@ function App() {
                 <h3>{item.filename}</h3>
                 <p><strong>ID:</strong> {item.id}</p>
                 <p>{item.summary}</p>
+                <button onClick={() => handleDelete(item.id)}>Delete</button>
               </div>
             ))
           )}
