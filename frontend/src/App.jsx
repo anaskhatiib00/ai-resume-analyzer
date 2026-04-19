@@ -86,9 +86,22 @@ function App() {
         throw new Error(data.detail || "Failed to delete analysis.");
       }
 
-      if (savedAnalyses.length > 0) {
-        setSavedAnalyses(savedAnalyses.filter((item) => item.id !== analysisId));
+      setSavedAnalyses(savedAnalyses.filter((item) => item.id !== analysisId));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleViewAnalysis = async (analysisId) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/analyses/${analysisId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to fetch analysis.");
       }
+
+      setAnalysis(data);
     } catch (err) {
       setError(err.message);
     }
@@ -125,7 +138,7 @@ function App() {
 
         {analysis && (
           <div className="result">
-            <h2>Latest Analysis</h2>
+            <h2>Analysis Details</h2>
 
             <div className="card">
               <h3>Summary</h3>
@@ -174,7 +187,11 @@ function App() {
                 <h3>{item.filename}</h3>
                 <p><strong>ID:</strong> {item.id}</p>
                 <p>{item.summary}</p>
-                <button onClick={() => handleDelete(item.id)}>Delete</button>
+
+                <div className="actions">
+                  <button onClick={() => handleViewAnalysis(item.id)}>View</button>
+                  <button onClick={() => handleDelete(item.id)}>Delete</button>
+                </div>
               </div>
             ))
           )}
