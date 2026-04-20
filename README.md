@@ -51,17 +51,17 @@ Backend: https://web-production-0556.up.railway.app
 ## Screenshots
 
 ### Home
-![Home](screenshots_home.png)
+![Home](screenshots/screenshots_home.png)
 
 ### Analysis Result
-![Analysis Result](screenshots_analysis-result1.png)
-![Analysis Result](screenshots_analysis-result2.png)
+![Analysis Result](screenshots/screenshots_analysis-result1.png)
+![Analysis Result](screenshots/screenshots_analysis-result2.png)
 
 ### Saved Analyses
-![Saved Analyses](screenshots_history.png)
+![Saved Analyses](screenshots/screenshots_history.png)
 
 ### View Saved Analysis
-![View Saved Analysis](screenshots_view-analysis.png)
+![View Saved Analysis](screenshots/screenshots_view-analysis.png)
 
 ## How It Works
 
