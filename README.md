@@ -81,3 +81,9 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn main:app --reload
+
+
+## Demo Video
+
+Watch the demo here:
+https://drive.google.com/file/d/1FQZbedsgCBuBULPqiRJTcQOmxVebAApl/view?usp=drive_link
