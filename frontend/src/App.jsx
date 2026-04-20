@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-function getErrorMessage(err) {
-  if (typeof err === "string") return err;
-  if (err?.message) return err.message;
-  return JSON.stringify(err);
-}
-
 const API_URL = "http://127.0.0.1:8000";
 
 function getGuestId() {
@@ -20,11 +14,19 @@ function getGuestId() {
   return guestId;
 }
 
+function getErrorMessage(err) {
+  if (typeof err === "string") return err;
+  if (err?.message) return err.message;
+  return JSON.stringify(err);
+}
+
 function App() {
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState("");
-  const [analysis, setAnalysis] = useState(null);
+  const [latestAnalysis, setLatestAnalysis] = useState(null);
   const [savedAnalyses, setSavedAnalyses] = useState([]);
+  const [expandedAnalysisId, setExpandedAnalysisId] = useState(null);
+  const [expandedAnalysisData, setExpandedAnalysisData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,7 +55,7 @@ function App() {
 
       setSavedAnalyses(data.analyses);
     } catch (err) {
-      setError(typeof err === "string" ? err : err.message || JSON.stringify(err));
+      setError(getErrorMessage(err));
     } finally {
       setHistoryLoading(false);
     }
@@ -78,7 +80,7 @@ function App() {
 
     setLoading(true);
     setError("");
-    setAnalysis(null);
+    setLatestAnalysis(null);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -103,10 +105,12 @@ function App() {
         );
       }
 
-      setAnalysis(data.analysis);
+      setLatestAnalysis(data.analysis);
+      setExpandedAnalysisId(null);
+      setExpandedAnalysisData(null);
       fetchAnalyses();
     } catch (err) {
-      setError(typeof err === "string" ? err : err.message || JSON.stringify(err));
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -132,13 +136,24 @@ function App() {
       }
 
       setSavedAnalyses(savedAnalyses.filter((item) => item.id !== analysisId));
+
+      if (expandedAnalysisId === analysisId) {
+        setExpandedAnalysisId(null);
+        setExpandedAnalysisData(null);
+      }
     } catch (err) {
-      setError(typeof err === "string" ? err : err.message || JSON.stringify(err));
+      setError(getErrorMessage(err));
     }
   };
 
   const handleViewAnalysis = async (analysisId) => {
     try {
+      if (expandedAnalysisId === analysisId) {
+        setExpandedAnalysisId(null);
+        setExpandedAnalysisData(null);
+        return;
+      }
+
       const response = await fetch(`${API_URL}/analyses/${analysisId}`, {
         headers: {
           "guest-id": guestId,
@@ -155,9 +170,10 @@ function App() {
         );
       }
 
-      setAnalysis(data);
+      setExpandedAnalysisId(analysisId);
+      setExpandedAnalysisData(data);
     } catch (err) {
-      setError(typeof err === "string" ? err : err.message || JSON.stringify(err));
+      setError(getErrorMessage(err));
     }
   };
 
@@ -177,7 +193,7 @@ function App() {
 
           <label>Job Description</label>
           <textarea
-            rows="8"
+            className="job-textarea"
             placeholder="Paste the job description here..."
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
@@ -190,19 +206,19 @@ function App() {
 
         {error && <p className="error">{error}</p>}
 
-        {analysis && (
+        {latestAnalysis && (
           <div className="result">
-            <h2>Analysis Details</h2>
+            <h2>Latest Analysis</h2>
 
             <div className="card">
               <h3>Summary</h3>
-              <p>{analysis.summary}</p>
+              <p>{latestAnalysis.summary}</p>
             </div>
 
             <div className="card">
               <h3>Matching Skills</h3>
               <ul>
-                {analysis.matching_skills.map((skill, index) => (
+                {latestAnalysis.matching_skills.map((skill, index) => (
                   <li key={index}>{skill}</li>
                 ))}
               </ul>
@@ -211,7 +227,7 @@ function App() {
             <div className="card">
               <h3>Missing Skills</h3>
               <ul>
-                {analysis.missing_skills.map((skill, index) => (
+                {latestAnalysis.missing_skills.map((skill, index) => (
                   <li key={index}>{skill}</li>
                 ))}
               </ul>
@@ -220,7 +236,7 @@ function App() {
             <div className="card">
               <h3>Suggestions</h3>
               <ul>
-                {analysis.suggestions.map((suggestion, index) => (
+                {latestAnalysis.suggestions.map((suggestion, index) => (
                   <li key={index}>{suggestion}</li>
                 ))}
               </ul>
@@ -237,15 +253,57 @@ function App() {
             <p>No saved analyses yet.</p>
           ) : (
             savedAnalyses.map((item) => (
-              <div className="card" key={item.id}>
-                <h3>{item.filename}</h3>
-                <p><strong>ID:</strong> {item.id}</p>
-                <p>{item.summary}</p>
+              <div className="card history-card" key={item.id}>
+                <div className="history-header">
+                  <div>
+                    <h3>{item.filename}</h3>
+                    <p><strong>ID:</strong> {item.id}</p>
+                    <p>{item.summary}</p>
+                  </div>
+                </div>
 
                 <div className="actions">
-                  <button onClick={() => handleViewAnalysis(item.id)}>View</button>
+                  <button onClick={() => handleViewAnalysis(item.id)}>
+                    {expandedAnalysisId === item.id ? "Hide" : "View"}
+                  </button>
                   <button onClick={() => handleDelete(item.id)}>Delete</button>
                 </div>
+
+                {expandedAnalysisId === item.id && expandedAnalysisData && (
+                  <div className="expanded-analysis">
+                    <div className="card inner-card">
+                      <h3>Summary</h3>
+                      <p>{expandedAnalysisData.summary}</p>
+                    </div>
+
+                    <div className="card inner-card">
+                      <h3>Matching Skills</h3>
+                      <ul>
+                        {expandedAnalysisData.matching_skills.map((skill, index) => (
+                          <li key={index}>{skill}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="card inner-card">
+                      <h3>Missing Skills</h3>
+                      <ul>
+                        {expandedAnalysisData.missing_skills.map((skill, index) => (
+                          <li key={index}>{skill}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="card inner-card">
+                      <h3>Suggestions</h3>
+                      <ul>
+                        {expandedAnalysisData.suggestions.map((suggestion, index) => (
+                          <li key={index}>{suggestion}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           )}
