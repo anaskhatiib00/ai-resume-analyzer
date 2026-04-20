@@ -63,6 +63,11 @@ Backend: https://web-production-0556.up.railway.app
 ### View Saved Analysis
 ![View Saved Analysis](screenshots/screenshots_view-analysis.png)
 
+## Demo Video
+
+Watch the demo here:
+https://drive.google.com/file/d/1FQZbedsgCBuBULPqiRJTcQOmxVebAApl/view?usp=drive_link
+
 ## How It Works
 
 1. User uploads a resume PDF
@@ -73,6 +78,7 @@ Backend: https://web-production-0556.up.railway.app
 6. The result is saved in PostgreSQL
 7. User can view or delete saved analyses later
 
+
 ## Local Setup
 
 ### Backend
@@ -81,9 +87,3 @@ python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn main:app --reload
-
-
-## Demo Video
-
-Watch the demo here:
-https://drive.google.com/file/d/1FQZbedsgCBuBULPqiRJTcQOmxVebAApl/view?usp=drive_link
