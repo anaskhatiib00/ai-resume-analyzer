@@ -1,5 +1,5 @@
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 import fitz
 
 from services.resume_analyzer import analyze_resume_against_job
@@ -11,7 +11,6 @@ from services.analysis_service import (
 )
 
 app = FastAPI()
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,7 +27,8 @@ def home():
 @app.post("/analyze-resume")
 async def analyze_resume(
     file: UploadFile = File(...),
-    job_description: str = Form(...)
+    job_description: str = Form(...),
+    guest_id: str = Header(...)
 ):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
@@ -47,7 +47,7 @@ async def analyze_resume(
     except Exception:
         raise HTTPException(status_code=500, detail="AI analysis failed")
 
-    save_analysis(file.filename, analysis_json)
+    save_analysis(file.filename, analysis_json, guest_id)
 
     return {
         "message": "Resume analyzed and saved successfully",
@@ -55,12 +55,12 @@ async def analyze_resume(
     }
 
 @app.get("/analyses")
-def get_analyses():
-    return {"analyses": get_all_analyses()}
+def get_analyses(guest_id: str = Header(...)):
+    return {"analyses": get_all_analyses(guest_id)}
 
 @app.get("/analyses/{analysis_id}")
-def get_single_analysis(analysis_id: int):
-    analysis = get_analysis_by_id(analysis_id)
+def get_single_analysis(analysis_id: int, guest_id: str = Header(...)):
+    analysis = get_analysis_by_id(analysis_id, guest_id)
 
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
@@ -68,8 +68,8 @@ def get_single_analysis(analysis_id: int):
     return analysis
 
 @app.delete("/analyses/{analysis_id}")
-def delete_analysis(analysis_id: int):
-    deleted = delete_analysis_by_id(analysis_id)
+def delete_analysis(analysis_id: int, guest_id: str = Header(...)):
+    deleted = delete_analysis_by_id(analysis_id, guest_id)
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Analysis not found")

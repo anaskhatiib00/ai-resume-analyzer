@@ -3,10 +3,11 @@ import json
 from database import SessionLocal
 from models import ResumeAnalysis
 
-def save_analysis(filename: str, analysis_json: dict):
+def save_analysis(filename: str, analysis_json: dict, guest_id: str):
     db = SessionLocal()
 
     new_record = ResumeAnalysis(
+        guest_id=guest_id,
         filename=filename,
         summary=analysis_json.get("summary"),
         matching_skills=json.dumps(analysis_json.get("matching_skills")),
@@ -18,9 +19,9 @@ def save_analysis(filename: str, analysis_json: dict):
     db.commit()
     db.close()
 
-def get_all_analyses():
+def get_all_analyses(guest_id: str):
     db = SessionLocal()
-    analyses = db.query(ResumeAnalysis).all()
+    analyses = db.query(ResumeAnalysis).filter(ResumeAnalysis.guest_id == guest_id).all()
     db.close()
 
     results = []
@@ -37,9 +38,12 @@ def get_all_analyses():
 
     return results
 
-def get_analysis_by_id(analysis_id: int):
+def get_analysis_by_id(analysis_id: int, guest_id: str):
     db = SessionLocal()
-    analysis = db.query(ResumeAnalysis).filter(ResumeAnalysis.id == analysis_id).first()
+    analysis = db.query(ResumeAnalysis).filter(
+        ResumeAnalysis.id == analysis_id,
+        ResumeAnalysis.guest_id == guest_id
+    ).first()
     db.close()
 
     if not analysis:
@@ -54,9 +58,12 @@ def get_analysis_by_id(analysis_id: int):
         "suggestions": json.loads(analysis.suggestions)
     }
 
-def delete_analysis_by_id(analysis_id: int):
+def delete_analysis_by_id(analysis_id: int, guest_id: str):
     db = SessionLocal()
-    analysis = db.query(ResumeAnalysis).filter(ResumeAnalysis.id == analysis_id).first()
+    analysis = db.query(ResumeAnalysis).filter(
+        ResumeAnalysis.id == analysis_id,
+        ResumeAnalysis.guest_id == guest_id
+    ).first()
 
     if not analysis:
         db.close()
